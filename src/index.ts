@@ -15,6 +15,9 @@ export type {
 // Client
 export { fetchWeather } from './lib/weather-client.js'
 
+// Géocodage de lieu → météo (compose @mostajs/geo)
+export { fetchWeatherByPlace, resolveLabel, type PlaceWeatherConfig } from './lib/geo-bridge.js'
+
 // Utilities
 export { isFlyable, msToKmh, getConditionIcon, CONDITION_ICONS, DEFAULT_CRITERIA } from './lib/conditions.js'
 export { getMockWeather } from './lib/mock-data.js'
