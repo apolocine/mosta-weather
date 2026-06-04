@@ -1,0 +1,151 @@
+<!doctype html>
+<!--
+  @mostajs/weather — Exemple application web (page autonome, zéro build)
+  Author: Dr Hamid MADANI <drmdh@msn.com>
+  Charge @mostajs/weather + @mostajs/geo depuis npm (esm.sh) + carte MapLibre.
+  Lancer : depuis examples/web/ → `python3 -m http.server 8080` puis http://localhost:8080
+-->
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>@mostajs/weather + geo — démo web</title>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" />
+  <script type="importmap">
+  { "imports": { "maplibre-gl": "https://esm.sh/maplibre-gl@4" } }
+  </script>
+  <style>
+    :root { --bg:#0f172a; --card:#1e293b; --txt:#e2e8f0; --muted:#94a3b8; --accent:#38bdf8; --ok:#22c55e; --ko:#ef4444; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: system-ui, sans-serif; background:var(--bg); color:var(--txt); }
+    header { padding:16px 20px; background:#020617; border-bottom:1px solid #334155; }
+    header h1 { margin:0; font-size:18px; } header p { margin:4px 0 0; color:var(--muted); font-size:13px; }
+    main { display:grid; grid-template-columns: 380px 1fr; gap:16px; padding:16px; }
+    @media (max-width:820px){ main{ grid-template-columns:1fr; } #map{ height:320px; } }
+    .panel { background:var(--card); border:1px solid #334155; border-radius:12px; padding:16px; }
+    label { display:block; font-size:12px; color:var(--muted); margin:10px 0 4px; }
+    input, select, button { width:100%; padding:9px 10px; border-radius:8px; border:1px solid #475569; background:#0b1220; color:var(--txt); font-size:14px; }
+    button { background:var(--accent); color:#04293a; font-weight:600; border:none; cursor:pointer; margin-top:14px; }
+    button:hover { filter:brightness(1.08); }
+    #map { height: calc(100vh - 32px); border-radius:12px; border:1px solid #334155; }
+    .cur { display:flex; align-items:center; gap:12px; margin-top:14px; }
+    .cur .t { font-size:40px; font-weight:700; } .cur .ico { font-size:40px; }
+    .row { display:flex; gap:8px; font-size:13px; color:var(--muted); margin-top:6px; flex-wrap:wrap; }
+    .fc { display:grid; grid-template-columns:repeat(5,1fr); gap:6px; margin-top:14px; }
+    .fc div { background:#0b1220; border-radius:8px; padding:8px 4px; text-align:center; font-size:12px; }
+    .fc .d { color:var(--muted); } .fc .f-ok{ color:var(--ok);} .fc .f-ko{ color:var(--ko);}
+    .alert { padding:8px 10px; border-radius:8px; margin-top:8px; font-size:13px; }
+    .alert.warn{ background:#422006; color:#fbbf24; } .alert.danger{ background:#450a0a; color:#fca5a5; }
+    .badge { font-size:11px; padding:2px 7px; border-radius:999px; background:#334155; color:var(--muted); }
+    .err { color:var(--ko); font-size:13px; margin-top:10px; white-space:pre-wrap; }
+    small.note { color:var(--muted); font-size:11px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🌤️ @mostajs/weather + 📍 @mostajs/geo — démo web</h1>
+    <p>Géocodage (OSM) → météo (OpenWeatherMap) → carte MapLibre + geofence. Chargé depuis npm via esm.sh.</p>
+  </header>
+
+  <main>
+    <section class="panel">
+      <label>Lieu</label>
+      <input id="place" value="Alger, Algérie" placeholder="ex. Oran, Algérie" />
+
+      <label>Fournisseur de géocodage</label>
+      <select id="provider">
+        <option value="osm">osm (réel, gratuit)</option>
+        <option value="demo">demo (hors-ligne)</option>
+      </select>
+
+      <label>Clé OpenWeatherMap <small class="note">(vide → météo en mode démo). Stockée en localStorage.</small></label>
+      <input id="key" type="password" placeholder="NEXT_PUBLIC_OPENWEATHER_KEY" />
+
+      <button id="go">Voir la météo</button>
+
+      <div id="out"></div>
+      <div id="err" class="err"></div>
+    </section>
+
+    <section><div id="map"></div></section>
+  </main>
+
+  <script type="module">
+    import { fetchWeatherByPlace } from 'https://esm.sh/@mostajs/weather@0.2.0'
+    import { geocode, distance, isWithin } from 'https://esm.sh/@mostajs/geo@0.1.0'
+    import maplibregl from 'maplibre-gl'
+
+    const $ = (id) => document.getElementById(id)
+    const keyEl = $('key')
+    keyEl.value = localStorage.getItem('owm_key') || ''
+    keyEl.addEventListener('change', () => localStorage.setItem('owm_key', keyEl.value.trim()))
+
+    // Carte MapLibre — fond OSM libre
+    const map = new maplibregl.Map({
+      container: 'map',
+      style: {
+        version: 8,
+        sources: { osm: { type:'raster', tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize:256, attribution:'© OpenStreetMap' } },
+        layers: [{ id:'osm', type:'raster', source:'osm' }],
+      },
+      center: [3.0588, 36.7538], zoom: 10,
+    })
+    let marker = null
+
+    function drawGeofence(center, radiusM) {
+      const pts = [], n = 64
+      for (let i = 0; i <= n; i++) {
+        const a = (i / n) * 2 * Math.PI
+        // approx° : 1° lat ≈ 111320 m
+        const dLat = (radiusM * Math.cos(a)) / 111320
+        const dLon = (radiusM * Math.sin(a)) / (111320 * Math.cos(center.lat * Math.PI / 180))
+        pts.push([center.lon + dLon, center.lat + dLat])
+      }
+      const data = { type:'Feature', geometry:{ type:'Polygon', coordinates:[pts] } }
+      if (map.getSource('fence')) map.getSource('fence').setData(data)
+      else { map.addSource('fence', { type:'geojson', data }); map.addLayer({ id:'fence-l', type:'fill', source:'fence', paint:{ 'fill-color':'#38bdf8','fill-opacity':0.15 } }); map.addLayer({ id:'fence-o', type:'line', source:'fence', paint:{ 'line-color':'#38bdf8','line-width':2 } }) }
+    }
+
+    async function run() {
+      $('err').textContent = ''; $('out').innerHTML = '⏳…'
+      const place = $('place').value.trim()
+      const provider = $('provider').value
+      const apiKey = keyEl.value.trim() || undefined
+      try {
+        // 1) géocodage via @mostajs/geo
+        const g = await geocode(place, { provider, lang:'fr' })
+        const loc = g.results[0]
+        if (!loc) throw new Error('Lieu introuvable : ' + place)
+
+        // 2) météo via @mostajs/weather (compose geo en interne aussi)
+        const w = await fetchWeatherByPlace(place, { apiKey, geo:{ provider, lang:'fr' } })
+
+        // 3) carte : centre + marqueur + geofence 2 km
+        map.flyTo({ center:[loc.lon, loc.lat], zoom:11 })
+        if (marker) marker.remove()
+        marker = new maplibregl.Marker().setLngLat([loc.lon, loc.lat]).setPopup(new maplibregl.Popup().setText(w.location)).addTo(map)
+        map.once('idle', () => drawGeofence({ lat:loc.lat, lon:loc.lon }, 2000))
+
+        // 4) rendu météo
+        const fc = w.forecast.map(f => `<div><div class="d">${f.day}</div><div>${f.icon}</div><div>${f.temp}°</div><div class="${f.flyable?'f-ok':'f-ko'}">${f.flyable?'✅':'❌'}</div></div>`).join('')
+        const al = w.alerts.map(a => `<div class="alert ${a.severity}">${a.message}</div>`).join('')
+        const dCenter = distance({lat:loc.lat,lon:loc.lon}, {lat:36.7538,lon:3.0588}, 'km').toFixed(0)
+        $('out').innerHTML = `
+          <div class="cur"><span class="ico">${w.current.icon}</span><span class="t">${w.current.temp}°C</span>
+            <span class="badge">${w.isRealData?'données réelles':'démo'}</span></div>
+          <div class="row"><span>📍 ${w.location}</span></div>
+          <div class="row"><span>💨 ${w.current.wind} km/h</span><span>💧 ${w.current.humidity ?? '—'}%</span><span>👁️ ${w.current.visibility ?? '—'} km</span><span>${w.current.condition}</span></div>
+          <div class="row"><span>↔️ ${dCenter} km du centre d'Alger</span><span>dans geofence 2 km : ${isWithin({lat:loc.lat,lon:loc.lon},{id:'z',center:{lat:loc.lat,lon:loc.lon},radiusM:2000})?'oui':'—'}</span></div>
+          ${al}
+          <div class="fc">${fc}</div>`
+      } catch (e) {
+        $('out').innerHTML = ''
+        $('err').textContent = '❌ ' + (e?.message || e)
+      }
+    }
+
+    $('go').addEventListener('click', run)
+    map.on('load', run)
+  </script>
+</body>
+</html>
