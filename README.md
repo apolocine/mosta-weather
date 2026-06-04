@@ -33,6 +33,26 @@ const data = await fetchWeather({
 // Returns mock data with isRealData: false
 ```
 
+### Fetch by place name (composes `@mostajs/geo`)
+
+Resolve a place name to coordinates via [`@mostajs/geo`](https://github.com/apolocine/mosta-geo), then fetch the weather — no need to know lat/lon.
+
+```typescript
+import { fetchWeatherByPlace } from '@mostajs/weather'
+
+// Real geocoding via OpenStreetMap (default), real weather via OWM key
+const data = await fetchWeatherByPlace('Alger', {
+  apiKey: process.env.OPENWEATHER_KEY,
+  geo: { provider: 'osm', lang: 'fr' },
+})
+
+// Fully offline (demo geocoder + demo weather)
+const demo = await fetchWeatherByPlace('Alger', { geo: { provider: 'demo' } })
+demo.location // 'Alger'  ·  demo.isRealData // false
+```
+
+The classic `fetchWeather({ location: { lat, lon } })` API is **unchanged** (backward compatible — see `test-scripts/non-regression.test.mjs`).
+
 ### React component
 
 ```tsx
@@ -64,6 +84,8 @@ isFlyable(15, 'Clear')       // true
 | Export | Description |
 |---|---|
 | `fetchWeather(config)` | Fetch current + 5-day forecast (or mock data) |
+| `fetchWeatherByPlace(query, config?)` | Geocode a place via `@mostajs/geo` then fetch its weather |
+| `resolveLabel(location, geo?)` | Fill a missing label via reverse-geocoding (`@mostajs/geo`) |
 | `isFlyable(wind, condition, criteria?)` | Check if conditions allow flight |
 | `msToKmh(ms)` | Convert m/s to km/h |
 | `getConditionIcon(condition)` | Get emoji for weather condition |
