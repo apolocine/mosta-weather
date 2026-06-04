@@ -15,6 +15,8 @@ npm i @mostajs/weather
 
 ## EXPORTS
 - fetchWeather(config) : function — météo courante + prévisions (ou mock si pas de clé)
+- fetchWeatherByPlace(query, config?) : function — géocode via @mostajs/geo puis météo du 1er résultat
+- resolveLabel(location, geo?) : function — complète le label par reverse-geocoding (@mostajs/geo)
 - isFlyable(windKmh, condition, criteria?) : function — décide si le vol est autorisé
 - msToKmh(ms) : function — conversion m/s → km/h
 - getConditionIcon(condition) : function — emoji associé à une condition
@@ -27,6 +29,8 @@ npm i @mostajs/weather
 
 ## API — SIGNATURES
 - function fetchWeather(config: WeatherConfig): Promise<WeatherData>
+- function fetchWeatherByPlace(query: string, config?: PlaceWeatherConfig): Promise<WeatherData>  // PlaceWeatherConfig = Omit<WeatherConfig,'location'> & { geo?: GeoConfig }
+- function resolveLabel(location: {lat;lon;label?}, geo?: GeoConfig): Promise<string>
 - function isFlyable(windKmh: number, condition: string, criteria?: FlyabilityCriteria): boolean
 - function msToKmh(ms: number): number
 - function getConditionIcon(condition: string): string
@@ -60,7 +64,9 @@ isFlyable(15, 'Rain');            // false (Rain interdit par défaut)
 Composant : `<WeatherPage config={...} onBack={() => router.back()} />`
 
 ## DÉPEND DE
-- Aucun module @mostajs/* requis. Peer dependency optionnelle : react (>=18) pour WeatherPage.
+- @mostajs/geo (^0.1.0) — géocodage pour fetchWeatherByPlace/resolveLabel (compose, ne réimplémente pas — DEVRULES §0).
+- Peer dependency optionnelle : react (>=18) pour WeatherPage.
+- fetchWeather classique (par {lat,lon}) reste autonome, sans appel à geo.
 
 ## PIÈGES
 - Sans `apiKey`, `fetchWeather` ne renvoie PAS d'erreur : il bascule silencieusement
