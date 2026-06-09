@@ -1,0 +1,77 @@
+<!doctype html>
+<!--
+  Portail documentaire — @mostajs/weather
+  Author: Dr Hamid MADANI <drmdh@msn.com>
+  Déployé sur https://geo.amia.fr/weather/
+-->
+<html lang="fr">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>@mostajs/weather — documentation & démo</title>
+  <style>
+    :root{--bg:#0f172a;--card:#1e293b;--txt:#e2e8f0;--muted:#94a3b8;--accent:#38bdf8;--accent2:#0ea5e9;--ok:#22c55e}
+    *{box-sizing:border-box}body{margin:0;font-family:system-ui,sans-serif;background:var(--bg);color:var(--txt)}
+    header{padding:28px 22px;background:#020617;border-bottom:1px solid #334155}
+    header h1{margin:0;font-size:22px}header p{margin:6px 0 0;color:var(--muted);font-size:14px;max-width:780px}
+    nav a{color:var(--accent);font-size:14px;margin-right:14px;text-decoration:none}
+    .wrap{max-width:1000px;margin:0 auto;padding:22px}
+    h2{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--accent);margin:26px 0 12px;border-top:1px solid #334155;padding-top:18px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+    .card{background:var(--card);border:1px solid #334155;border-radius:12px;padding:16px;display:flex;flex-direction:column}
+    .card h3{margin:0 0 6px;font-size:16px}.card p{margin:0 0 12px;color:var(--muted);font-size:13px;flex:1}
+    .tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;background:#334155;color:var(--muted);margin-bottom:8px}
+    .live{background:rgba(34,197,94,.18);color:var(--ok)}
+    a.btn{display:inline-block;text-decoration:none;text-align:center;padding:9px 12px;border-radius:8px;background:var(--accent);color:#04293a;font-weight:600;font-size:14px}
+    a.btn.ghost{background:#334155;color:var(--txt)}
+    a.lnk{color:var(--accent);text-decoration:none;font-size:14px}
+    ul{margin:.3em 0;padding-left:1.1em}li{margin:.3em 0;font-size:14px}
+    footer{color:var(--muted);font-size:12px;border-top:1px solid #334155;margin-top:26px;padding-top:14px}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🌤️ <code>@mostajs/weather</code> — documentation &amp; démo</h1>
+    <p>Module météo de l'écosystème @mostajs : OpenWeatherMap, critères de vol (flyability), alertes, <b>mode démo sans clé</b>. Compose <code>@mostajs/geo</code> pour le géocodage.</p>
+    <p><nav><a href="/">← Démo geo</a><a href="/cyclists/">Suivi cyclistes</a><a href="/about.html">À propos / Aide</a></nav></p>
+  </header>
+
+  <div class="wrap">
+    <h2>Démo live</h2>
+    <div class="grid">
+      <div class="card">
+        <span class="tag live">● LIVE</span>
+        <h3>weather + geo</h3>
+        <p>Géocodage (OSM) → météo (OpenWeatherMap) → carte MapLibre + geofence. Sans clé → mode démo ; avec clé → données réelles.</p>
+        <a class="btn" href="./demo/">Ouvrir la démo</a>
+      </div>
+    </div>
+
+    <h2>Documents importants</h2>
+    <div class="grid">
+      <div class="card"><h3>README</h3><p>Prise en main : install, exemples, référence API.</p>
+        <a class="btn ghost" href="./docs/README.pdf">README.pdf</a></div>
+      <div class="card"><h3>Référence dev (llms)</h3><p>Fiche dense : rôle, exports, API, types, pièges.</p>
+        <a class="lnk" href="./docs/llms-weather.pdf">📄 PDF</a> · <a class="lnk" href="./docs/llms.txt">texte brut</a></div>
+      <div class="card"><h3>Plan de tests</h3><p>Cas de test &amp; couverture.</p>
+        <a class="btn ghost" href="./docs/PLAN-TESTS.pdf">PLAN-TESTS.pdf</a></div>
+      <div class="card"><h3>CHANGELOG</h3><p>Historique des versions (SemVer).</p>
+        <a class="btn ghost" href="./docs/CHANGELOG.pdf">CHANGELOG.pdf</a></div>
+      <div class="card"><h3>npm</h3><p>Package publié <code>@mostajs/weather@0.2.0</code>.</p>
+        <a class="btn ghost" href="https://www.npmjs.com/package/@mostajs/weather" target="_blank" rel="noopener">npmjs.com</a></div>
+    </div>
+
+    <h2>En bref</h2>
+    <ul>
+      <li><b>Provider</b> : OpenWeatherMap (clé requise pour le réel) ; <b>mode démo</b> sans clé (<code>isRealData:false</code>).</li>
+      <li><b>Compose</b> <code>@mostajs/geo</code> : <code>fetchWeatherByPlace(lieu)</code> géocode puis interroge la météo.</li>
+      <li><b>Flyability</b> : critères de vol (vent, visibilité, précipitations) + alertes.</li>
+      <li>Licence <b>AGPL-3.0-or-later</b>.</li>
+    </ul>
+
+    <footer>
+      Brique météo : <code>@mostajs/weather</code> · géocodage : <a class="lnk" href="https://geo.amia.fr/">@mostajs/geo</a> ·
+      <a class="lnk" href="/about.html">À propos / Aide</a> · Dr Hamid MADANI &lt;drmdh@msn.com&gt;
+    </footer>
+  </div>
+</body>
+</html>

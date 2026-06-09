@@ -70,6 +70,12 @@
     <section><div id="map"></div></section>
   </main>
 
+  <!-- Pilotage par le .env (principe écosystème) : /config.js est GÉNÉRÉ par le
+       serveur depuis le .env (via @mostajs/config) et expose les variables
+       publiques NEXT_PUBLIC_*. Changer la clé = éditer le .env + `pm2 restart`,
+       jamais ce code. Fichier optionnel (absent → mode démo). -->
+  <script src="/config.js"></script>
+
   <script type="module">
     import { fetchWeatherByPlace } from 'https://esm.sh/@mostajs/weather@0.2.0'
     import { geocode, distance, isWithin } from 'https://esm.sh/@mostajs/geo@0.1.0'
@@ -77,7 +83,8 @@
 
     const $ = (id) => document.getElementById(id)
     const keyEl = $('key')
-    keyEl.value = localStorage.getItem('owm_key') || ''
+    // priorité : saisie utilisateur (localStorage) → clé du .env (NEXT_PUBLIC_OPENWEATHER_KEY) → vide (démo)
+    keyEl.value = localStorage.getItem('owm_key') || (window.NEXT_PUBLIC_OPENWEATHER_KEY || '')
     keyEl.addEventListener('change', () => localStorage.setItem('owm_key', keyEl.value.trim()))
 
     // Carte MapLibre — fond OSM libre
